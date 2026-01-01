@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Year Resolutions 2026</title>
-    <link rel="icon" href="" type="image/x-icon">
     
     <style>
         :root {
@@ -119,6 +118,17 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
         button:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--primary); }
+
+        .copy-btn {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--text-main);
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
 
         #view-letter {
             max-width: 600px;
@@ -347,8 +357,12 @@
                 <div id="dynamic-message" class="personal-message"></div>
 
                 <div class="no-print" style="text-align: center; margin-top: 30px;">
-                    <button onclick="window.print()">🖨️ Print / Save PDF</button>
+                    <button onclick="copyData()" class="copy-btn">📋 Copy Plan Data</button>
+                    <button onclick="window.print()">🖨️ Print / PDF</button>
                     <button onclick="location.reload()" style="background: transparent; border: 2px solid var(--text-main); color: var(--text-main); margin-left: 10px;">Restart</button>
+                </div>
+                <div id="copy-feedback" class="no-print" style="text-align: center; margin-top: 10px; color: var(--accent); font-size: 0.9rem; opacity: 0; transition: opacity 0.3s;">
+                    Copied to clipboard! Keep this safe for the tracking app.
                 </div>
             </div>
         </div>
@@ -356,7 +370,8 @@
     </div>
 
     <script>
-        const DEV_MODE = false;
+        // --- CONFIGURATION ---
+        const DEV_MODE = false; // Set to true to skip countdown
         const targetDate = new Date(`January 1, 2026 00:00:00`).getTime();
 
         let userData = {
@@ -367,6 +382,7 @@
             }
         };
 
+        // --- COUNTDOWN LOGIC ---
         function updateCountdown() {
             const now = new Date().getTime();
             const distance = targetDate - now;
@@ -392,6 +408,7 @@
         let timerInterval = setInterval(updateCountdown, 1000);
         updateCountdown();
 
+        // --- USER FLOW FUNCTIONS ---
         function submitName() {
             const nameInput = document.getElementById('username');
             const name = nameInput.value.trim();
@@ -473,6 +490,7 @@
             g.hobby = parseInt(document.getElementById('goal-hobby').value);
             g.family = parseInt(document.getElementById('goal-family').value);
 
+            // Normalize for Chart (0-100 scale)
             const normalizedData = [
                 g.fitness, 
                 (g.study / 40) * 100, 
@@ -497,6 +515,32 @@
             writeMessage();
         }
 
+        // --- NEW FEATURE: COPY DATA FOR SECOND APP ---
+        function copyData() {
+            // Encode the data to base64 so it looks like a "save code"
+            // We use standard JSON stringify first
+            const dataToSave = {
+                user: userData.name,
+                generatedAt: new Date().toISOString(),
+                goals: userData.goals
+            };
+            
+            const jsonStr = JSON.stringify(dataToSave);
+            const encodedStr = btoa(jsonStr); // Base64 encoding
+
+            navigator.clipboard.writeText(encodedStr).then(() => {
+                const feedback = document.getElementById('copy-feedback');
+                feedback.style.opacity = '1';
+                setTimeout(() => {
+                    feedback.style.opacity = '0';
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert("Could not copy automatically. Please check permissions.");
+            });
+        }
+
+        // --- VISUALIZATION ---
         function drawBarChart(data) {
             const canvas = document.getElementById('progressChart');
             const ctx = canvas.getContext('2d');
@@ -517,6 +561,7 @@
             const bottomY = canvas.height - padding;
             const startX = padding;
 
+            // X-Axis Line
             ctx.beginPath();
             ctx.moveTo(startX, bottomY);
             ctx.lineTo(startX + chartWidth, bottomY);
@@ -528,6 +573,7 @@
                 const x = startX + (index * (barWidth + gap));
                 const y = bottomY - h;
 
+                // Bar
                 ctx.fillStyle = colors[index];
                 ctx.beginPath();
                 ctx.moveTo(x, bottomY);
@@ -538,11 +584,13 @@
                 ctx.lineTo(x + barWidth, bottomY);
                 ctx.fill();
 
+                // Text Value
                 ctx.fillStyle = valueColor;
                 ctx.font = "bold 12px sans-serif";
                 ctx.textAlign = "center";
                 ctx.fillText(Math.round(val) + "%", x + barWidth/2, y - 8);
 
+                // Label
                 ctx.fillStyle = labelColor;
                 ctx.font = "12px sans-serif";
                 ctx.fillText(labels[index], x + barWidth/2, bottomY + 18);
@@ -571,6 +619,7 @@
             document.getElementById('dynamic-message').innerHTML = msg;
         }
 
+        // --- FIREWORKS ANIMATION ---
         const canvas = document.getElementById('fireworks-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
@@ -641,9 +690,7 @@
                 createExplosion(random(50, canvas.width - 50), random(50, canvas.height - 200));
             }
         }
-
         loop();
-
     </script>
 </body>
 </html>
